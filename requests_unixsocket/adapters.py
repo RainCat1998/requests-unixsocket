@@ -8,11 +8,6 @@ from requests.adapters import HTTPAdapter
 from requests.compat import urlparse
 
 try:
-    import http.client as httplib
-except ImportError:
-    import httplib
-
-try:
     from requests.packages import urllib3
 except ImportError:
     import urllib3
@@ -20,7 +15,7 @@ except ImportError:
 from .settings import default_settings
 
 
-class UnixHTTPConnection(httplib.HTTPConnection, object):
+class UnixHTTPConnection(urllib3.connection.HTTPConnection, object):
 
     def __init__(self, url, timeout=60, settings=None):
         """Create an HTTP connection to a unix domain socket"""
