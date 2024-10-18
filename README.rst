@@ -4,9 +4,7 @@ requests-unixsocket
 .. image:: https://badge.fury.io/py/requests-unixsocket.svg
     :target: https://badge.fury.io/py/requests-unixsocket
     :alt: Latest Version on PyPI
-    
-.. image:: https://github.com/msabramo/requests-unixsocket/actions/workflows/tests.yml/badge.svg
-    :target: https://github.com/msabramo/requests-unixsocket/actions/workflows/tests.yml
+
 
 Use `requests <http://docs.python-requests.org/>`_ to talk HTTP via a UNIX domain socket
 
@@ -21,14 +19,25 @@ You can use it by instantiating a special ``Session`` object:
 .. code-block:: python
 
     import json
-
-    import requests_unixsocket
-
-    session = requests_unixsocket.Session()
-
-    r = session.get('http+unix://%2Fvar%2Frun%2Fdocker.sock/info')
-    registry_config = r.json()['RegistryConfig']
+    from requests.compat import urlparse
+    
+    from requests_unixsocket import Session, Settings
+    
+    
+    def custom_urlparse(url):
+        parsed_url = urlparse(url)
+        return Settings.ParseResult(
+            sockpath=parsed_url.path,
+            reqpath=parsed_url.fragment,
+        )
+    
+    
+    session = Session(settings=Settings(urlparse=custom_urlparse))
+    
+    r = session.get('http+unix://sock.localhost/var/run/docker.sock#/info')
+    registry_config = r.json().get('RegistryConfig', {})
     print(json.dumps(registry_config, indent=4))
+
 
 
 Implicit (monkeypatching)
@@ -49,7 +58,7 @@ You can monkeypatch globally:
 
     requests_unixsocket.monkeypatch()
 
-    r = requests.get('http+unix://%2Fvar%2Frun%2Fdocker.sock/info')
+    r = requests.get('http+unix://sock.localhost/var/run/docker.sock#/info')
     assert r.status_code == 200
 
 or you can do it temporarily using a context manager:
@@ -59,7 +68,7 @@ or you can do it temporarily using a context manager:
     import requests_unixsocket
 
     with requests_unixsocket.monkeypatch():
-        r = requests.get('http+unix://%2Fvar%2Frun%2Fdocker.sock/info')
+        r = requests.get('http+unix://sock.localhost/var/run/docker.sock#/info')
         assert r.status_code == 200
 
 
